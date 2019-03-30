@@ -1,18 +1,4 @@
-import torch
-import torch.nn as nn
-import numpy as np
-
-# IOS 安卓官服 B服数据
-data = [
-        [[32,24,44],[24,29,47],[24,41,35],[27,26,48],[31,29,40],[29,39,32],[26,32,41]],
-        [[31,26,44],[24,29,47],[23,40,36],[27,27,46],[29,36,35],[29,32,39],[38,29,33]],
-        [[34,23,43],[23,28,48],[23,38,39],[36,27,38],[23,42,35],[23,33,44],[34,33,33]]
-        ]
-
-data = np.array(data)
-input_data = data[:,:-1]
-y = data[:,1:]
-# 输入为前n-1天的，预测对应后一天的概率
+from data import *
 
 # 定义网络
 class testNet(nn.Module):
@@ -33,10 +19,9 @@ class testNet(nn.Module):
         return x
 
 net = testNet()
-# optimizer = torch.optim.SGD(net.parameters(),lr = 0.01,momentum=0.9,weight_decay=1E-7)
-optimizer = torch.optim.Adam(net.parameters(),lr = 0.01,weight_decay=1E-7)
+# optimizer = torch.optim.SGD(net.parameters(),lr = 0.0001,momentum=0.9,weight_decay=1E-7)
+optimizer = torch.optim.Adam(net.parameters(),lr = 0.005,weight_decay=1E-7)
 loss1 = torch.nn.MSELoss()
-
 
 def train(batch,label):
     optimizer.zero_grad()
@@ -55,10 +40,7 @@ load_name = save_name # 读取模型文件的名字，设为NULL重新训练
 if load_name :
     net.load_state_dict(torch.load(load_name))
 
-
 for epoch in range(0): # 训练的轮数 一般几百次次就收敛了
-    input_datas = torch.Tensor(input_data)
-    ys = torch.Tensor(y)
     step_loss = train(input_datas,ys)
     print(step_loss)
 
@@ -66,11 +48,22 @@ if save_name:
     torch.save(net.state_dict(),save_name)
 
 
-#test_data = [[38,21,41],[26,27,47],[24,36,40],[34,30,36]] #渠道服
-test_data = data[0] #输出结果 0:IOS 1:安卓官服 2:安卓b服
-if 1:
-    data = np.array(test_data)
-    input_datas = torch.Tensor([data])
-    #print(input_datas)
-    reslut = net(input_datas)
-    print(reslut)
+def get_net():
+    return net
+
+
+if __name__ == '__main__':
+    #test_data = [[38,21,41],[26,27,47],[24,36,40],[34,30,36],[24,37,39],[32,35,33],[30,26,44],[31.9,36,32.1],[24,32,44]] #渠道服
+    #test_data = [[30,25,44],[23,29,48],[25,26,38],[35,31,34],[22,34,44],[26,41,34],[28,31,41],[32,34,33]]
+    name = ["IOS ","安官","安B "]
+    for i in range(3):
+        test_data = data[i]
+
+        data_ = np.array(test_data)
+        input_datas = torch.Tensor([data_])
+        #print(input_datas)
+        reslut = net(input_datas).detach().numpy()
+        print(name[i],reslut[0][-1])
+        #print(name[i], reslut[0])
+        #a = reslut[0][:-1]-test_data[1:]
+        #print(np.sum(np.abs(a)))

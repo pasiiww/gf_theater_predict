@@ -1,17 +1,4 @@
-import torch
-import torch.nn as nn
-import numpy as np
-import torch.nn.functional as F
-
-# IOS 安卓官服 B服数据
-data = [
-        [[32,24,44],[24,29,47],[24,41,35],[27,26,48],[31,29,40],[29,39,32],[26,32,41],[32,37,30],[26,35,39]],
-        [[31,26,44],[24,29,47],[23,40,36],[27.1,26.9,46],[29,36,35],[29,32,39],[38,29,33],[28,29,43],[23,44,33]],
-        [[34,23,43],[23,28,48],[23,38,39],[36,27,38],[23,42,35],[23,33,44],[34,33.1,32.9],[22,36,42],[26,39,35]]
-        ]
-
-data = np.array(data)
-
+from data import *
 
 class Attention(nn.Module):
     def __init__(self):
@@ -72,7 +59,6 @@ net = testNet()
 optimizer = torch.optim.Adam(net.parameters(),lr = 0.01,weight_decay=1E-7)
 loss1 = torch.nn.MSELoss()
 
-
 def train(batch,label,atte_key):
     optimizer.zero_grad()
     reslut = net(batch,atte_key)
@@ -96,13 +82,6 @@ load_name = "temp_model2.pkl" # 读取模型文件的名字，设为NULL重新�
 if load_name :
     net.load_state_dict(torch.load(load_name))
 
-input_data = data[:,:-1]
-y = data[:,1:]
-# 输入为前n-1天的，预测对应后一天的概率
-
-atte_key = torch.Tensor([[input_data[1],input_data[2],input_data[0]],[input_data[2],input_data[0],input_data[1]]])
-input_datas = torch.Tensor(input_data)
-ys = torch.Tensor(y)
 for epoch in range(0):
     step_loss = train(input_datas,ys,atte_key)
     print(step_loss)
@@ -111,21 +90,27 @@ for epoch in range(0):
 
 if save_name:
     torch.save(net.state_dict(),save_name)
+
 print("test loss ", test(input_datas,ys,atte_key))
 
-test_data = [[38,21,41],[26,27,47],[24,36,40],[34,30,36],[24,37,39],[32,35,33],[30,26,44],[31.9,36,32.1],[24,32,44]] #渠道服
+def get_net():
+    return net
 
-#输出结果 0:IOS 1:安卓官服 2:安卓b服
+if __name__ == '__main__':
+    #test_data = [[38,21,41],[26,27,47],[24,36,40],[34,30,36],[24,37,39],[32,35,33],[30,26,44],[31.9,36,32.1],[24,32,44]] #渠道服
+    #test_data = [[30,25,44],[23,29,48],[25,26,38],[35,31,34],[22,34,44],[26,41,34],[28,31,41],[32,34,33]]
+    #输出结果 0:IOS 1:安卓官服 2:安卓b服
 
-name = ["IOS ","安官","安B "]
-for i in range(3):
-    test_data = data[i]
-    data_ = np.array(test_data)
-    input_datas = torch.Tensor([data_])
-    #print(input_datas)
-    atte_key = torch.Tensor(
-        [[input_data[(i+1)%3]], [input_data[(i+2)%3]]])
-    reslut = net(input_datas,atte_key).detach().numpy()
-    print(name[i],reslut[0][-1])
-    #print(name[i], reslut[0])
-    #print(reslut[0][:-1]-test_data[1:])
+    name = ["IOS ","安官","安B "]
+    for i in range(3):
+        test_data = data[i]
+        data_ = np.array(test_data)
+        input_datas = torch.Tensor([data_])
+        #print(input_datas)
+        atte_key = torch.Tensor(
+            [[input_data[(i+1)%3]], [input_data[(i+2)%3]]])
+        reslut = net(input_datas,atte_key).detach().numpy()
+        print(name[i],reslut[0][-1])
+        #print(name[i], reslut[0])
+        #a = reslut[0][:-1]-test_data[1:]
+        #print(np.sum(np.abs(a)))
